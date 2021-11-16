@@ -1,0 +1,107 @@
+configuration:
+  name: Default
+
+  Properties:
+    property:
+      - name: log-path
+        value: "logs"
+      - name: log-name
+        value: [service-name]
+      - name: archive
+        value: ${log-path}/archive
+
+
+  Appenders:
+    Console:
+      name: Console_Appender
+      target: SYSTEM_OUT
+      PatternLayout:
+        pattern: "%highlight{%level{length=5} %d{HH:mm:ss,SSS} %T %c{10} %M - %enc{%msg}{CRLF}%n}"
+
+    #  Will generate up to 10 log files for a given day.
+    # During every rollover it will delete those that are older than 60 days,
+    # but keep the most recent 10 GB
+    RollingFile:
+      - name: RollingFile_Appender
+        fileName: ${log-path}/${log-name}.log
+        filePattern: "${archive}/${log-name}.%d{yyyy-MM-dd}-%i.log.gz"
+        PatternLayout:
+          pattern: "[%-5level] %d{HH:mm:ss,SSS}{GMT-4} [%t] %c{10} - %enc{%msg}{CRLF}%n"
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 10 MB
+        DefaultRollOverStrategy:
+          min: 1
+          max: 10
+          Delete:
+            basePath: "${archive}"
+            maxDepth: 1
+            IfFileName:
+              glob: "${log-name}*.log.gz"
+            IfLastModified:
+              age: 60d
+              IfAny:
+                IfAccumulatedFileSize:
+                  exceeds: "10 GB"
+      - name: InfoFile_Appender
+        fileName: ${log-path}/info-statements.log
+        filePattern: "${archive}/${log-name}.%d{yyyy-MM-dd}-%i.log.gz"
+        PatternLayout:
+          pattern: "[%-5level] %d{HH:mm:ss,SSS}{GMT+0} %enc{%msg}{CRLF}%n"
+        Policies:
+          SizeBasedTriggeringPolicy:
+            size: 10 MB
+        ThresholdFilter:
+          level: INFO
+        DefaultRollOverStrategy:
+          min: 1
+          max: 10
+          Delete:
+            basePath: "${archive}"
+            maxDepth: 1
+            IfFileName:
+              glob: "${log-name}*.log.gz"
+            IfLastModified:
+              age: 60d
+              IfAny:
+                IfAccumulatedFileSize:
+                  exceeds: "10 GB"
+  Loggers:
+    logger:
+      - name: com.dtcc.ion
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+          - ref: InfoFile_Appender
+      - name: net.corda.serialization.internal.amqp.PropertySerializer
+        level: error
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+      - name: io.opentracing
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+      - name: io.jaegertracing
+        level: debug
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+      - name: org.apache.activemq
+        level: warn
+        additivity: false
+        AppenderRef:
+          - ref: Console_Appender
+          - ref: RollingFile_Appender
+
+    Root:
+      level: warn
+      AppenderRef:
+        - ref: Console_Appender
+        - ref: RollingFile_Appender

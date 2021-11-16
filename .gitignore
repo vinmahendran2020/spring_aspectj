@@ -1,0 +1,8 @@
+# Default ignored files
+/shelf/
+.idea
+*.iml
+*/target/*
+*.DS_STORE
+build/*
+target/*
